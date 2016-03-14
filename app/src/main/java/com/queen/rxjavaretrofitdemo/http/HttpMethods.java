@@ -31,11 +31,11 @@ public class HttpMethods {
     //构造方法私有
     private HttpMethods() {
         //手动创建一个OkHttpClient并设置超时时间
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+        OkHttpClient.Builder httpClientbuilder = new OkHttpClient.Builder();
+        httpClientbuilder.connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS);
 
         retrofit = new Retrofit.Builder()
-                .client(builder.build())
+                .client(httpClientbuilder.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .baseUrl(BASE_URL)
@@ -61,13 +61,9 @@ public class HttpMethods {
      * @param count 获取长度
      */
     public void getTopMovie(Subscriber<List<Subject>> subscriber, int start, int count){
+
         movieService.getTopMovie(start, count)
-                .flatMap(new Func1<HttpResult<List<Subject>>, Observable<List<Subject>>>() {
-                    @Override
-                    public Observable<List<Subject>> call(HttpResult<List<Subject>> httpResult) {
-                        return flatResult(httpResult);
-                    }
-                })
+                .map(new HttpResultFunc<List<Subject>>())
                 .subscribeOn(Schedulers.io())
                 .unsubscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -75,24 +71,19 @@ public class HttpMethods {
     }
 
     /**
-     * 用来统一处理Http的ResultCode
-     * @param result   Http请求返回的数据，用过HttpResult进行了封装
+     * 用来统一处理Http的resultCode,并将HttpResult的Data部分剥离出来返回给subscriber
+     *
      * @param <T>   Subscriber真正需要的数据类型，也就是Data部分的数据类型
-     * @return
      */
-    static <T> Observable<T> flatResult(final HttpResult<T> result) {
-        return Observable.create(new Observable.OnSubscribe<T>() {
-            @Override
-            public void call(Subscriber<? super T> subscriber) {
+    private class HttpResultFunc<T> implements Func1<HttpResult<T>, T>{
 
-                if (result.getCount() == 0) {
-                    subscriber.onError(new ApiException(ApiException.USER_NOT_EXIST));
-                } else{
-                    subscriber.onNext(result.getSubjects());
-                }
-
-                subscriber.onCompleted();
+        @Override
+        public T call(HttpResult<T> httpResult) {
+            if (httpResult.getCount() == 0) {
+                throw new ApiException(100);
             }
-        });
+            return httpResult.getSubjects();
+        }
     }
+
 }
