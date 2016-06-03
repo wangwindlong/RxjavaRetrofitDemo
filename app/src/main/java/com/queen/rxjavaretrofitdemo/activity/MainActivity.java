@@ -13,15 +13,15 @@ import com.queen.rxjavaretrofitdemo.http.HttpMethods;
 
 import java.util.List;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
-    @Bind(R.id.click_me_BN)
+    @BindView(R.id.click_me_BN)
     Button clickMeBN;
-    @Bind(R.id.result_TV)
+    @BindView(R.id.result_TV)
     TextView resultTV;
 
     private SubscriberOnNextListener getTopMovieOnNext;
